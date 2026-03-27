@@ -19,17 +19,22 @@ export const calculatePriorityScore = (issue, votes = {}) => {
   if (isRepeat) aiScore += 10;
   aiScore = Math.min(Math.max(aiScore, 0), 100);
 
-  // Community score: upvotes / totalVotes mapped to 0-100.
-  const resolvedVotes = Object.keys(votes || {}).length > 0
-    ? Object.values(votes)
-    : Array(upvotes).fill(1).concat(Array(downvotes).fill(-1));
-  const total = resolvedVotes.length;
-  const up = resolvedVotes.filter(v => v === 1).length;
-  const voteScore = total === 0
-    ? 0
-    : Math.round((up / total) * 100);
+  let computedUpvotes = Number(upvotes || 0);
+  let computedDownvotes = Number(downvotes || 0);
 
-  const weightedScore = Math.round(aiScore * 0.3 + voteScore * 0.7);
+  // Prefer exact vote map when available.
+  if (votes && typeof votes === 'object' && Object.keys(votes).length > 0) {
+    const arr = Object.values(votes);
+    computedUpvotes = arr.filter((v) => v === 1).length;
+    computedDownvotes = arr.filter((v) => v === -1).length;
+  }
+
+  const totalVotes = computedUpvotes + computedDownvotes;
+  const voteRatioPercent = totalVotes === 0 ? 0 : (computedUpvotes / totalVotes) * 100;
+
+  // Requested formula: 0.3 * AI score + 0.7 * (upvotes / totalVotes) * 100
+  const weightedScore = Math.round(0.3 * aiScore + 0.7 * voteRatioPercent);
+
   return Math.min(Math.max(weightedScore, 0), 100);
 };
 

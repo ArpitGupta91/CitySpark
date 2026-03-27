@@ -104,6 +104,12 @@ const MOCK_ISSUES = [
 ];
 
 export async function seedIfEmpty() {
+  const shouldSeed = String(process.env.SEED_DEFAULT_ISSUES ?? 'true').toLowerCase() !== 'false';
+  if (!shouldSeed) {
+    console.log('Skipping default issue seed (SEED_DEFAULT_ISSUES=false)');
+    return;
+  }
+
   const count = await Issue.countDocuments();
   if (count === 0) {
     await Issue.insertMany(MOCK_ISSUES);

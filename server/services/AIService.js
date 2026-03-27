@@ -18,8 +18,8 @@ const GUIDANCE_KB = [
     id: 'pan_card_services',
     title: 'PAN Card Services',
     department: 'Income Tax Department (NSDL / UTIITSL)',
-    location: 'Apply online via official PAN portals or authorized facilitation centers',
-    whereToApply: 'www.onlineservices.nsdl.com or www.pan.utiitsl.com',
+    location: 'https://www.utiitsl.com/',
+    whereToApply: 'https://www.utiitsl.com/',
     timeline: 'Usually 7-15 working days depending on verification',
     fees: 'As per PAN issuance/update fee schedule',
     tags: [
@@ -380,16 +380,22 @@ export const calculatePriorityScore = (issue, votes = {}) => {
   if (issue.isRepeat) aiScore += 10;
   aiScore = Math.min(Math.max(aiScore, 0), 100);
 
-  const resolvedVotes = Object.keys(votes || {}).length > 0
-    ? Object.values(votes)
-    : Array(issue.upvotes || 0).fill(1).concat(Array(issue.downvotes || 0).fill(-1));
-  const total = resolvedVotes.length;
-  const up = resolvedVotes.filter(v => v === 1).length;
-  const voteScore = total === 0
-    ? 0
-    : Math.round((up / total) * 100);
+  let upvotes = Number(issue.upvotes || 0);
+  let downvotes = Number(issue.downvotes || 0);
 
-  const weightedScore = Math.round(aiScore * 0.3 + voteScore * 0.7);
+  // Prefer exact vote map when available.
+  if (votes && typeof votes === 'object' && Object.keys(votes).length > 0) {
+    const arr = Object.values(votes);
+    upvotes = arr.filter((v) => v === 1).length;
+    downvotes = arr.filter((v) => v === -1).length;
+  }
+
+  const totalVotes = upvotes + downvotes;
+  const voteRatioPercent = totalVotes === 0 ? 0 : (upvotes / totalVotes) * 100;
+
+  // Requested formula: 0.3 * AI score + 0.7 * (upvotes / totalVotes) * 100
+  const weightedScore = Math.round(0.3 * aiScore + 0.7 * voteRatioPercent);
+
   return Math.min(Math.max(weightedScore, 0), 100);
 };
 
